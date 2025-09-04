@@ -1,16 +1,17 @@
 
 import './App.css'
-import { Routes, Route, BrowserRouter } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import Register from './Pages/Register'
+import ContextProvider from './Context/Context.tsx'
 function App() {
-
-
   return (
-    <BrowserRouter>
-    <Routes>
-      <Route path='/register' element={<Register label="Username" type="text" placeholder="Enter your username" />} />
-    </Routes>
-    </BrowserRouter>
+    <ContextProvider>
+
+      <Routes>
+        <Route path='/register' element={<Register />} />
+      </Routes>
+
+    </ContextProvider>
   )
 }
 

@@ -1,4 +1,12 @@
 import React, { useState } from 'react';
+import { FaCamera } from "react-icons/fa";
+import { useAppContext } from '../Context/Context';
+import API from '../API/api';
+import avatarDefault from '../Assets/avatar-default.svg';
+type AppContextType = {
+    country: string;
+    // add other context properties if needed
+};
 
 const Register = () => {
     const [formData, setFormData] = useState({
@@ -9,26 +17,126 @@ const Register = () => {
         day: '',
         month: '',
         year: '',
-        gender: ''
+        gender: '',
     });
+    const [avatar, setAvatar] = useState<string | null>(null);
+    const [banner, setBanner] = useState<string | null>(null);
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [bannerFile, setBannerFile] = useState<File | null>(null);
+
+    const { country } = useAppContext() as AppContextType;
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({
             ...prev,
+            country,
             [name]: value
         }));
+
     };
 
-    const handleSubmit = () => {
-        console.log('Form submitted:', formData);
+    const validadEmail = (email: string) => {
+        const regex = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/;
+        return regex.test(email);
+    }
+    const handleChangeBanner = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setBannerFile(e.target.files[0]);
+            setBanner(URL.createObjectURL(e.target.files[0]));
+        }
+    }
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setAvatarFile(e.target.files[0]);
+            setAvatar(URL.createObjectURL(e.target.files[0]));
+        }
+    };
+
+    const removeAvatar = () => {
+        setAvatar(null);
+    };
+    const handleSubmit = async () => {
+        if (validadEmail(formData.email)) {
+            await API.post('/auth/register', formData);
+            const formUpload = new FormData();
+            if (avatarFile) {
+                formUpload.append('avatar', avatarFile);
+            }
+            if (bannerFile) {
+                formUpload.append('banner', bannerFile);
+            }
+            if (formUpload.has('avatar') || formUpload.has('banner')) {
+                await API.post('/auth/upload', formUpload, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+            }
+
+        }
+        else {
+            alert("Email không hợp lệ")
+        }
+
     };
 
     return (
         <div className="min-h-screen bg-gray-100 flex items-center justify-center py-12 px-4">
-            <div>
-                <img src="./assets" alt="" />
+            <div className="relative w-full h-80">
+                {/* Ảnh bìa hình chữ nhật */}
+                <img
+                    src={
+                        banner ||
+                        "https://via.placeholder.com/600x200?text=Cover" // ảnh bìa mặc định
+                    }
+                    alt="cover"
+                    className="w-2/3 h-full object-cover rounded-xl border-2 border-gray-300"
+                />
+
+                {/* Ảnh avatar tròn nằm giữa */}
+                <div className="absolute left-1/3 bottom-1/2 transform -translate-x-1/2 translate-y-1/2">
+                    <div className="relative w-40 h-40 rounded-full mx-auto">
+                        <img
+                            src={
+                                avatar ||
+                                avatarDefault // ảnh mặc định
+                            }
+                            alt="avatar"
+                            className="w-40 h-40 rounded-full object-cover border-4 border-white shadow-lg"
+                        />
+                        {/* Nút xoá */}
+                        {avatar && (
+                            <button
+                                onClick={removeAvatar}
+                                className="absolute top-1 right-1 bg-black/50 text-white text-sm px-2 rounded-full"
+                            >
+                                ✕
+                            </button>
+                        )}
+                        {/* Icon camera */}
+                        <label className="absolute bottom-2 right-0 -translate-x-1/2 cursor-pointer text-gray-700">
+                            <FaCamera className="w-8 h-8" />
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleFileChange}
+                            />
+                        </label>
+                    </div>
+                </div>
+                <label className="absolute bottom-2 left-1/2 -translate-x-1/2 cursor-pointer text-gray-700">
+                    <FaCamera className="w-8 h-8" />
+                    <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleChangeBanner}
+                    />
+                </label>
             </div>
+
             <div className="max-w-md w-full">
                 {/* Sign Up Form */}
                 <div className="bg-white rounded-lg shadow-md p-6">
@@ -50,7 +158,7 @@ const Register = () => {
                                 placeholder="Họ"
                                 value={formData.lastName}
                                 onChange={handleInputChange}
-                                className="flex-1 px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                                className="flex-1 w-1/2 px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                                 required
                             />
                         </div>
@@ -59,7 +167,7 @@ const Register = () => {
                         <input
                             type="email"
                             name="email"
-                            placeholder="Email hoặc số di động"
+                            placeholder="Email "
                             value={formData.email}
                             onChange={handleInputChange}
                             className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-gray-900"
@@ -123,7 +231,7 @@ const Register = () => {
                                 >
                                     <option value="">Năm</option>
                                     {Array.from({ length: 100 }, (_, i) => {
-                                        const year = 2024 - i;
+                                        const year = 2025 - i;
                                         return <option key={year} value={year}>{year}</option>
                                     })}
                                 </select>
@@ -189,6 +297,7 @@ const Register = () => {
                             </a>
                         </p>
                     </div>
+
                 </div>
             </div>
         </div>
